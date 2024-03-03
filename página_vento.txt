@@ -1,0 +1,90 @@
+<template>
+    <div class="weather-forecast">
+      <h2>Previsão de Vento</h2>
+      <div class="chart-container">
+        <canvas ref="windChart"></canvas>
+      </div>
+      <table class="weather-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Velocidade do Vento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(data, index) in forecastData" :key="index">
+            <td>{{ data.date }}</td>
+            <td>{{ data.windSpeed }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </template>
+  
+  <script>
+  import axios from 'axios';
+  import { Line, mixins } from 'vue-chart3';
+  const { reactiveProp } = mixins;
+  
+  export default {
+    extends: Line,
+    mixins: [reactiveProp],
+    data() {
+      return {
+        forecastData: []
+      };
+    },
+    mounted() {
+      this.fetchWeatherData();
+    },
+    methods: {
+      async fetchWeatherData() {
+        try {
+          const response = await axios.get('https://api.open-meteo.com/wind');
+          this.forecastData = response.data;
+          this.renderChart({
+            labels: this.forecastData.map(data => data.date),
+            datasets: [
+              {
+                label: 'Velocidade do Vento',
+                data: this.forecastData.map(data => data.windSpeed)
+              }
+            ]
+          }, { responsive: true });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  }
+  </script>
+  
+  <style scoped>
+  .weather-forecast {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .chart-container {
+    width: 100%;
+    max-width: 600px; /* ajuste conforme necessário */
+  }
+  
+  .weather-table {
+    width: 100%;
+    max-width: 600px; /* ajuste conforme necessário */
+    margin-top: 20px;
+  }
+  
+  @media (max-width: 600px) {
+    .chart-container {
+      max-width: 100%;
+    }
+    
+    .weather-table {
+      max-width: 100%;
+    }
+  }
+  </style>
+  
