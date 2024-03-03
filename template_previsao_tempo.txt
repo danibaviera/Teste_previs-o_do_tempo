@@ -1,0 +1,63 @@
+<template>
+    <div>
+      <h2>Previsão de Temperatura</h2>
+      <canvas ref="temperatureChartCanvas"></canvas>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Temperatura</th>
+            <th>Temperatura Aparente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(data, index) in forecastData" :key="index">
+            <td>{{ data.date }}</td>
+            <td>{{ data.temperature }}</td>
+            <td>{{ data.apparentTemperature }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </template>
+  
+  <script>
+  import axios from 'axios';
+  import { Line } from 'vue-chart3';
+  
+  export default {
+    extends: Line,
+    data() {
+      return {
+        forecastData: []
+      };
+    },
+    mounted() {
+      this.fetchWeatherData();
+    },
+    methods: {
+      async fetchWeatherData() {
+        try {
+          const response = await axios.get('https://api.open-meteo.com/weather');
+          this.forecastData = response.data;
+          this.renderChart({
+            labels: this.forecastData.map(data => data.date),
+            datasets: [
+              {
+                label: 'Temperatura',
+                data: this.forecastData.map(data => data.temperature)
+              },
+              {
+                label: 'Temperatura Aparente',
+                data: this.forecastData.map(data => data.apparentTemperature)
+              }
+            ]
+          }, { responsive: true });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  }
+  </script>
+  
