@@ -1,0 +1,114 @@
+<template>
+    <div class="wind-page">
+      <h2>Previsão de Vento</h2>
+      <div class="date-selector">
+        <label for="startDate">Data de Início:</label>
+        <input type="date" id="startDate" v-model="startDate" @change="fetchWindData" :max="endDate">
+        <label for="endDate">Data de Fim:</label>
+        <input type="date" id="endDate" v-model="endDate" @change="fetchWindData" :min="startDate">
+      </div>
+      <div class="chart-container">
+        <canvas ref="windChart"></canvas>
+      </div>
+      <table class="wind-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Velocidade do Vento (m/s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(data, index) in windData" :key="index">
+            <td>{{ data.date }}</td>
+            <td>{{ data.windSpeed }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </template>
+  
+  <script>
+  import axios from 'axios';
+  import { Line, mixins } from 'vue-chart3';
+  const { reactiveProp } = mixins;
+  
+  export default {
+    extends: Line,
+    mixins: [reactiveProp],
+    data() {
+      return {
+        startDate: null,
+        endDate: null,
+        windData: []
+      };
+    },
+    mounted() {
+      this.fetchDefaultWindData();
+    },
+    methods: {
+      async fetchDefaultWindData() {
+        // Definir a data de início para 14 dias atrás
+        const today = new Date();
+        const fourteenDaysAgo = new Date(today.getTime() - (14 * 24 * 60 * 60 * 1000));
+        this.startDate = fourteenDaysAgo.toISOString().split('T')[0];
+        
+        // Definir a data de fim para hoje
+        this.endDate = today.toISOString().split('T')[0];
+        
+        // Buscar os dados
+        this.fetchWindData();
+      },
+      async fetchWindData() {
+        try {
+          const response = await axios.get(`https://api.open-meteo.com/wind?start=${this.startDate}&end=${this.endDate}`);
+          this.windData = response.data;
+          this.renderChart({
+            labels: this.windData.map(data => data.date),
+            datasets: [
+              {
+                label: 'Velocidade do Vento (m/s)',
+                data: this.windData.map(data => data.windSpeed)
+              }
+            ]
+          }, { responsive: true });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  };
+  </script>
+  
+  <style scoped>
+  .wind-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .date-selector {
+    margin-bottom: 20px;
+  }
+  
+  .chart-container {
+    width: 100%;
+    max-width: 600px; /* ajuste conforme necessário */
+  }
+  
+  .wind-table {
+    width: 100%;
+    max-width: 600px; /* ajuste conforme necessário */
+    margin-top: 20px;
+  }
+  
+  @media (max-width: 600px) {
+    .chart-container {
+      max-width: 100%;
+    }
+    
+    .wind-table {
+      max-width: 100%;
+    }
+  }
+  </style>
+  
